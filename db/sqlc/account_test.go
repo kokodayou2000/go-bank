@@ -2,12 +2,14 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"github.com/kokodayou2000/go-bank/util"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
-func TestQueries_CreateAccount(t *testing.T) {
+func createRandomAccount(t *testing.T) Account {
 	arg := CreateAccountParams{
 		Owner:    util.RandomOwner(),
 		Balance:  util.RandomMoney(),
@@ -23,5 +25,69 @@ func TestQueries_CreateAccount(t *testing.T) {
 	require.NotZero(t, account.ID)
 	// 其类型的零值
 	require.NotZero(t, account.CreatedAt)
+	return account
+}
 
+func TestQueries_CreateAccount(t *testing.T) {
+	createRandomAccount(t)
+}
+
+// 创建一个随机数据，然后通过id获取到数据库中的数据，对比创建的数据和数据库中的数据是否一致
+func TestQueries_GetAccount(t *testing.T) {
+	account1 := createRandomAccount(t)
+	account2, err := testQueries.GetAccount(context.Background(), account1.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, account2)
+	require.Equal(t, account1.ID, account2.ID)
+	require.Equal(t, account1.Owner, account2.Owner)
+	require.Equal(t, account1.Balance, account2.Balance)
+	require.Equal(t, account1.Currency, account2.Currency)
+	require.WithinDuration(t, account1.CreatedAt, account2.CreatedAt, time.Second)
+}
+
+func TestQueries_UpdateAccount(t *testing.T) {
+	account1 := createRandomAccount(t)
+	args := UpdateAccountParams{
+		ID:      account1.ID,
+		Balance: util.RandomMoney(),
+	}
+	account2, err := testQueries.UpdateAccount(context.Background(), args)
+	require.NoError(t, err)
+	require.NotEmpty(t, account2)
+
+	require.Equal(t, account1.ID, account2.ID)
+	require.Equal(t, account1.Owner, account2.Owner)
+	require.Equal(t, args.Balance, account2.Balance)
+	require.Equal(t, account1.Currency, account2.Currency)
+	require.WithinDuration(t, account1.CreatedAt, account2.CreatedAt, time.Second)
+
+}
+
+func TestQueries_DeleteAccount(t *testing.T) {
+	account1 := createRandomAccount(t)
+
+	err := testQueries.DeleteAccount(context.Background(), account1.ID)
+	require.NoError(t, err)
+	account2, err := testQueries.GetAccount(context.Background(), account1.ID)
+	require.Error(t, err)
+	require.EqualError(t, err, sql.ErrNoRows.Error())
+	require.Empty(t, account2)
+}
+func TestQueries_ListAccounts(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		createRandomAccount(t)
+	}
+	arg := ListAccountsParams{
+
+		Limit:  5,
+		Offset: 5,
+	}
+	accounts, err := testQueries.ListAccounts(context.Background(), arg)
+	require.NoError(t, err)
+	require.Len(t, accounts, 5)
+
+	for _, account := range accounts {
+		require.NotEmpty(t, account)
+
+	}
 }

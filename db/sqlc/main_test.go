@@ -13,6 +13,7 @@ const (
 	dbSource = "postgresql://root:secret@localhost:5433/simple_bank?sslmode=disable"
 )
 
+// 连接对象
 var testQueries *Queries
 
 func TestMain(m *testing.M) {
