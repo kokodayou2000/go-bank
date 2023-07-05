@@ -21,4 +21,7 @@ startAll: postgres start createdb migrateup
 sqlc:
 	docker run --rm -v "C:\Users\03062\Desktop\Code\workspace\project\golang\simplebank:/src" -w /src kjconroy/sqlc generate
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc
+test:
+	go test -v -cover ./...
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test
