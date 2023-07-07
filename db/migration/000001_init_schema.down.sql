@@ -1,3 +1,3 @@
-drop table if exists entries;
-drop table if exists transfers;
-drop table if exists account;
+DROP TABLE IF EXISTS entries;
+DROP TABLE IF EXISTS transfers;
+DROP TABLE IF EXISTS accounts;

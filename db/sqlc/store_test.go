@@ -16,15 +16,19 @@ func TestStore_TransferTx(t *testing.T) {
 	fmt.Println(">> before:", account1.Balance, account2.Balance)
 
 	// 并发的执行
-	n := 5
+	n := 2
 	amount := int64(10)
 	// channel 安全的共享数据，无需使用lock
 	errs := make(chan error)
 	results := make(chan TransferTxResult)
 	existed := make(map[int]bool)
 	for i := 0; i < n; i++ {
+		// tx 1 tx 2 tx 3 ...
+		txName := fmt.Sprintf("tx %d", i+1)
 		go func() {
-			result, err := store.TransferTx(context.Background(), TransferParams{
+			// 不用自带的上下文了
+			ctx := context.WithValue(context.Background(), txKey, txName)
+			result, err := store.TransferTx(ctx, TransferParams{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
 				Amount:        amount,
