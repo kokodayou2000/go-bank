@@ -45,13 +45,11 @@ type TransferParams struct {
 	Amount        int64 `json:"amount"`
 }
 type TransferTxResult struct {
-	FromAccountID int64 `json:"from_account_id"`
-	ToAccountID   int64 `json:"to_account_id"`
-	Amount        int64 `json:"amount"`
-
-	Transfer  Transfer `json:"transfer"`
-	FromEntry Entry    `json:"from_entry"`
-	ToEntry   Entry    `json:"to_entry"`
+	Transfer    Transfer `json:"transfer"`
+	FromAccount Account  `json:"from_account"`
+	ToAccount   Account  `json:"to_account"`
+	FromEntry   Entry    `json:"from_entry"`
+	ToEntry     Entry    `json:"to_entry"`
 }
 
 // TransferTx 转账的事务
@@ -87,7 +85,32 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferParams) (Transfe
 			return err
 		}
 
-		// TODO: 更新账户余额
+		// get account -> update its balance
+		// 把这个更新成update的
+		account1, err := q.GetAccountForUpdate(ctx, arg.FromAccountID)
+		if err != nil {
+			return err
+		}
+		result.FromAccount, err = q.UpdateAccount(ctx, UpdateAccountParams{
+			ID:      arg.FromAccountID,
+			Balance: account1.Balance - arg.Amount,
+		})
+		if err != nil {
+			return err
+		}
+
+		account2, err := q.GetAccountForUpdate(ctx, arg.ToAccountID)
+		if err != nil {
+			return err
+		}
+		result.ToAccount, err = q.UpdateAccount(ctx, UpdateAccountParams{
+			ID:      arg.ToAccountID,
+			Balance: account2.Balance + arg.Amount,
+		})
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	return result, err
